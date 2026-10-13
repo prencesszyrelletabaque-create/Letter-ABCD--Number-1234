@@ -1,0 +1,550 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ABCD Letter Play</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@600;700;800&display=swap">
+<style>
+/* Layout: one narrow column, like a flashcard. Menu -> game -> stars. Teal grid lines come from the classroom chart. */
+:root {
+  --bg: #eef9f7;
+  --card: #ffffff;
+  --ink: #12313d;
+  --muted: #4d6f7a;
+  --line: #17a79d;
+  --line-soft: #bfe6e1;
+  --primary: #0e8f86;
+  --on-primary: #ffffff;
+  --good: #1f9d55;
+  --good-bg: #dcf5e6;
+  --bad: #d63b44;
+  --bad-bg: #fde4e5;
+  --star: #f5a300;
+  --la: #e04650;
+  --lb: #2b78f0;
+  --lc: #d98600;
+  --ld: #1f9d55;
+  --display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e2230; --card: #173344; --ink: #eaf7f6; --muted: #9cc3c9;
+    --line: #3cc8bd; --line-soft: #28505b; --primary: #3cc8bd; --on-primary: #08242b;
+    --good: #55d68a; --good-bg: #17402c; --bad: #ff7b82; --bad-bg: #4a2429; --star: #ffc933;
+    --la: #ff7b82; --lb: #7db1ff; --lc: #ffb93d; --ld: #55d68a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e2230; --card: #173344; --ink: #eaf7f6; --muted: #9cc3c9;
+  --line: #3cc8bd; --line-soft: #28505b; --primary: #3cc8bd; --on-primary: #08242b;
+  --good: #55d68a; --good-bg: #17402c; --bad: #ff7b82; --bad-bg: #4a2429; --star: #ffc933;
+  --la: #ff7b82; --lb: #7db1ff; --lc: #ffb93d; --ld: #55d68a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 700; padding-inline: 16px; padding-block: 18px 40px; }
+button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 4px solid var(--star); outline-offset: 3px; }
+.wrap { max-width: 620px; margin-inline: auto; display: flex; flex-direction: column; gap: 16px; }
+h1, h2, .disp { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; }
+.LA { color: var(--la); } .LB { color: var(--lb); } .LC { color: var(--lc); } .LD { color: var(--ld); }
+
+/* top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.speed { display: inline-flex; border: 3px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--card); }
+.speed button { border: 0; background: transparent; padding: 8px 14px; font-weight: 800; font-size: .95rem; min-height: 44px; }
+.speed button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.back { border: 3px solid var(--line); background: var(--card); border-radius: 999px; padding: 8px 16px; font-weight: 800; min-height: 44px; }
+
+/* menu */
+.title { display: flex; flex-direction: column; gap: 4px; }
+.title h1 { font-size: clamp(2rem, 8vw, 2.8rem); line-height: 1.05; }
+.title p { margin: 0; color: var(--muted); font-size: 1.05rem; }
+.menu { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.tile { border: 3px solid var(--line); background: var(--card); border-radius: 22px; padding: 16px 14px; text-align: left; display: flex; flex-direction: column; gap: 6px; min-height: 140px; min-width: 0; }
+.tile:active { transform: scale(.98); }
+.tile .big { font-family: var(--display); font-size: 2.4rem; line-height: 1; display: flex; gap: 10px; align-items: baseline; }
+.tile .name { font-family: var(--display); font-size: 1.25rem; font-weight: 600; }
+.tile .hint { color: var(--muted); font-size: .95rem; font-weight: 700; }
+.tile.wide { grid-column: 1 / -1; min-height: 0; flex-direction: row; align-items: center; gap: 16px; }
+.tile.wide .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+/* learn chart (mirrors the classroom card: letters + words on the left, numbers on the right) */
+.chart { background: var(--card); border: 3px solid var(--line); border-radius: 22px; display: grid; grid-template-columns: 1fr 96px; overflow: hidden; }
+.chart .left { padding: 14px; display: flex; flex-direction: column; gap: 16px; border-right: 3px solid var(--line); min-width: 0; }
+.chart .right { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 10px; }
+.pairrow { display: flex; flex-direction: column; gap: 8px; }
+.lhead { align-self: flex-start; border: 0; background: transparent; font-family: var(--display); font-weight: 700; font-size: 2.2rem; padding: 0 6px; min-height: 44px; }
+.words { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.wtile { border: 3px solid var(--line-soft); background: var(--bg); border-radius: 16px; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.wtile .em { font-size: 2.6rem; line-height: 1.1; }
+.wtile .wd { font-family: var(--display); font-size: 1.15rem; font-weight: 600; overflow-wrap: anywhere; }
+.numbtn { border: 3px solid var(--line); background: var(--bg); border-radius: 16px; width: 64px; height: 64px; font-family: var(--display); font-weight: 700; font-size: 2rem; }
+.hear-note { color: var(--muted); margin: 0; font-size: .98rem; }
+@media (max-width: 380px) { .chart { grid-template-columns: 1fr 76px; } .numbtn { width: 52px; height: 52px; } }
+
+/* game */
+.progress { display: flex; gap: 6px; flex: 1; min-width: 120px; }
+.progress i { flex: 1; height: 12px; border-radius: 99px; background: var(--line-soft); }
+.progress i.done { background: var(--line); }
+.progress i.now { background: var(--star); }
+.qcard { background: var(--card); border: 3px solid var(--line); border-radius: 26px; padding: 18px 16px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.prompt { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.prompt h2 { font-size: clamp(1.4rem, 6vw, 1.9rem); line-height: 1.15; }
+.listen { width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; flex: none; }
+.listen svg { width: 28px; height: 28px; }
+.stage { min-height: 150px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 10px; font-family: var(--display); font-weight: 700; }
+.stage .glyph { font-size: clamp(6rem, 30vw, 9rem); line-height: 1; }
+.stage .pic { font-size: clamp(5.5rem, 28vw, 8rem); line-height: 1; }
+.stage .many { font-size: clamp(3.2rem, 17vw, 4.8rem); line-height: 1.05; animation: pop .35s ease-out both; }
+.stage .many:nth-child(2) { animation-delay: .08s; } .stage .many:nth-child(3) { animation-delay: .16s; } .stage .many:nth-child(4) { animation-delay: .24s; }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+.opt { border: 3px solid var(--line); background: var(--bg); border-radius: 22px; min-height: 120px; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: var(--display); font-weight: 700; min-width: 0; }
+.opt .o-main { font-size: clamp(2.4rem, 12vw, 3.4rem); line-height: 1.05; overflow-wrap: anywhere; }
+.opt .o-main.word { font-size: clamp(1.7rem, 8vw, 2.4rem); }
+.opt .o-sub { font-size: 2rem; line-height: 1; }
+.opt.good { background: var(--good-bg); border-color: var(--good); }
+.opt.bad { background: var(--bad-bg); border-color: var(--bad); animation: shake .35s; opacity: .7; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.say { min-height: 3.2rem; width: 100%; border-radius: 16px; padding: 10px 12px; font-family: var(--display); font-size: clamp(1.2rem, 5.5vw, 1.6rem); font-weight: 600; text-align: center; display: flex; align-items: center; justify-content: center; }
+.say.ok { background: var(--good-bg); color: var(--good); }
+.say.no { background: var(--bad-bg); color: var(--bad); }
+.nextbtn, .bigbtn { border: 0; background: var(--primary); color: var(--on-primary); font-family: var(--display); font-weight: 700; font-size: 1.4rem; padding: 14px 28px; border-radius: 999px; min-height: 56px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.ghost { background: var(--card); color: var(--ink); border: 3px solid var(--line); }
+
+/* result */
+.result { text-align: center; align-items: center; }
+.stars { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; font-size: 2.4rem; }
+.stars span { filter: grayscale(1); opacity: .3; }
+.stars span.on { filter: none; opacity: 1; animation: pop .4s ease-out both; }
+.note { background: var(--card); border: 3px dashed var(--line); border-radius: 18px; padding: 12px 14px; font-size: .95rem; color: var(--muted); }
+/* listen and repeat */
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.tab { border: 3px solid var(--line); background: var(--card); border-radius: 18px; min-height: 68px; font-family: var(--display); font-weight: 700; font-size: 2rem; }
+.tab[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.ctl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ctl-label { font-family: var(--display); font-weight: 600; font-size: 1.1rem; }
+.lrows { display: flex; flex-direction: column; gap: 12px; }
+.lrow { background: var(--card); border: 3px solid var(--line); border-radius: 22px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
+.lrow.playing { border-color: var(--star); box-shadow: 0 0 0 4px var(--star); }
+.lrow .pics { font-size: 2.6rem; line-height: 1.1; flex: none; min-width: 56px; text-align: center; font-family: var(--display); font-weight: 700; }
+.lrow .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lrow .tag { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 800; }
+.lrow .q { font-family: var(--display); font-size: 1.1rem; font-weight: 500; color: var(--muted); }
+.lrow .a { font-family: var(--display); font-size: 1.35rem; font-weight: 600; line-height: 1.25; }
+.hl { background: var(--good-bg); border-radius: 8px; padding: 0 6px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+/* ---------- data (from the classroom chart) ---------- */
+var GROUPS = {
+  AB: { letters: ['A', 'B'], nums: [1, 2] },
+  CD: { letters: ['C', 'D'], nums: [3, 4] }
+};
+var LET = {
+  A: { sound: 'ah',  word: 'apple', em: '🍎' },
+  B: { sound: 'buh', ts: 'bah', word: 'boy',   em: '👦' },
+  C: { sound: 'kuh', word: 'cat',   em: '🐱' },
+  D: { sound: 'duh', word: 'dog',   em: '🐶' }
+};
+var VOCAB = [
+  { w: 'apple', em: '🍎', L: 'A', g: 'AB', art: 'an apple' },
+  { w: 'Annie', em: '👧', L: 'A', g: 'AB', art: 'Annie' },
+  { w: 'boy',   em: '👦', L: 'B', g: 'AB', art: 'a boy' },
+  { w: 'bat',   em: '🦇', L: 'B', g: 'AB', art: 'a bat' },
+  { w: 'cat',   em: '🐱', L: 'C', g: 'CD', art: 'a cat' },
+  { w: 'car',   em: '🚗', L: 'C', g: 'CD', art: 'a car' },
+  { w: 'dog',   em: '🐶', L: 'D', g: 'CD', art: 'a dog' },
+  { w: 'duck',  em: '🦆', L: 'D', g: 'CD', art: 'a duck' }
+];
+/* things you can count (Annie is a name, so she is not counted) */
+var COUNTABLE = VOCAB.filter(function (v) { return v.w !== 'Annie'; });
+var NUMWORD = { 1: 'one', 2: 'two', 3: 'three', 4: 'four' };
+var PRAISE = ['Great job!', 'Very good!', 'Well done!', 'Super!'];
+/* what the voice says for each letter sound (B is spelled "bah" so the voice does not end it with a "t" like "but") */
+function TS(L) { return LET[L].ts || LET[L].sound; }
+var MODES = {
+  letter: { name: 'What letter is this?', hint: 'Big or small letters', big: '<span class="LA">A</span><span class="LB">b</span>' },
+  sound:  { name: 'What sound?', hint: 'Listen and choose', big: '<span class="LC">k</span><span class="LD">d</span>' },
+  word:   { name: 'What is this?', hint: 'Look at the picture', big: '🐱🚗' },
+  count:  { name: 'How many?', hint: 'Count and say', big: '🍎🍎' }
+};
+
+/* ---------- audio (slow on purpose, for beginners) ---------- */
+var rate = 0.5;
+var playTok = 0;
+var voiceCache = null;
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  var vs = window.speechSynthesis.getVoices() || [];
+  if (!vs.length) return null;
+  if (voiceCache && vs.indexOf(voiceCache) > -1) return voiceCache;
+  var en = vs.filter(function (v) { return /^en[-_]US/i.test(v.lang); });
+  if (!en.length) en = vs.filter(function (v) { return /^en/i.test(v.lang); });
+  var pref = en.filter(function (v) { return /samantha|google us|jenny|aria|zira|female|karen/i.test(v.name); });
+  voiceCache = (pref[0] || en[0] || null);
+  return voiceCache;
+}
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  playTok++;
+  var pl = document.querySelectorAll('.lrow.playing');
+  for (var z = 0; z < pl.length; z++) pl[z].classList.remove('playing');
+  try {
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = rate; u.pitch = 1.08;
+    var v = pickVoice(); if (v) u.voice = v;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+if ('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged = function () { voiceCache = null; }; }
+
+/* ---------- helpers ---------- */
+function $(s) { return document.querySelector(s); }
+function rnd(n) { return Math.floor(Math.random() * n); }
+function pick(a) { return a[rnd(a.length)]; }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = rnd(i + 1), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+var ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+function lc(L) { return 'L' + L; }
+
+/* ---------- question builders ---------- */
+function qLetter(g) {
+  var L = pick(GROUPS[g].letters), small = Math.random() < 0.4;
+  var show = small ? L.toLowerCase() : L;
+  var opts = GROUPS[g].letters.map(function (x) {
+    var t = small ? x.toLowerCase() : x;
+    return { key: x, html: '<span class="o-main ' + lc(x) + '">' + t + '</span>', ok: x === L };
+  });
+  var kind = small ? 'small' : 'big';
+  return {
+    prompt: 'What letter is this?',
+    speak: 'What letter is this?',
+    stage: '<span class="glyph ' + lc(L) + '">' + show + '</span>',
+    opts: opts,
+    sentence: 'This is ' + kind + ' ' + L + '.',
+    sayOk: 'Yes! This is ' + kind + ' ' + L + '.'
+  };
+}
+function qSound(g) {
+  var L = pick(GROUPS[g].letters);
+  var opts = GROUPS[g].letters.map(function (x) {
+    return { key: x, html: '<span class="o-main word">' + LET[x].sound + '</span><span class="o-sub">' + LET[x].em + '</span>', ok: x === L, say: TS(x) };
+  });
+  return {
+    prompt: 'What sound does ' + L + ' make?',
+    speak: 'What sound does ' + L + ' make?',
+    stage: '<span class="glyph ' + lc(L) + '">' + L + L.toLowerCase() + '</span>',
+    opts: opts,
+    sentence: L + ' says "' + LET[L].sound + '", like ' + LET[L].word + '.',
+    sayOk: 'Yes! ' + L + ' says ' + TS(L) + ', like ' + LET[L].word + '.'
+  };
+}
+function qWord(g) {
+  var pool = VOCAB.filter(function (v) { return v.g === g; });
+  var it = pick(pool);
+  var other = pick(pool.filter(function (v) { return v !== it; }));
+  var opts = shuffle([it, other]).map(function (v) {
+    return { key: v.w, html: '<span class="o-main word">' + v.w + '</span>', ok: v === it };
+  });
+  var isName = it.w === 'Annie';
+  return {
+    prompt: 'What is this?',
+    speak: 'What is this?',
+    stage: '<span class="pic">' + it.em + '</span>',
+    opts: opts,
+    sentence: isName ? 'This is Annie.' : 'It is ' + it.art + '.',
+    sayOk: isName ? 'Yes! This is Annie.' : 'Yes! It is ' + it.art + '.'
+  };
+}
+function qCount(g) {
+  var pool = COUNTABLE.filter(function (v) { return v.g === g; });
+  var it = pick(pool);
+  var nums = GROUPS[g].nums;
+  var n = pick(nums);
+  var plural = it.w + 's';
+  var noun = n === 1 ? it.w : plural;
+  var pics = '';
+  for (var i = 0; i < n; i++) pics += '<span class="many">' + it.em + '</span>';
+  var opts = nums.map(function (x) { return { key: x, html: '<span class="o-main">' + x + '</span>', ok: x === n }; });
+  return {
+    prompt: 'How many ' + plural + ' do you see?',
+    speak: 'How many ' + plural + ' do you see?',
+    stage: pics,
+    opts: opts,
+    sentence: 'I see ' + n + ' ' + noun + '.',
+    sayOk: 'Yes! I see ' + NUMWORD[n] + ' ' + noun + '.'
+  };
+}
+var BUILD = { letter: qLetter, sound: qSound, word: qWord, count: qCount };
+
+/* ---------- state + screens ---------- */
+var S = { mode: null, qs: [], i: 0, stars: 0, answered: false, tried: false };
+var app = $('#app');
+
+function speedBar() {
+  return '<div class="speed" role="group" aria-label="Voice speed">' +
+    '<button type="button" data-rate="0.5" aria-pressed="' + (rate === 0.5) + '">Slow</button>' +
+    '<button type="button" data-rate="0.35" aria-pressed="' + (rate === 0.35) + '">Very slow</button></div>';
+}
+function bindSpeed() {
+  var btns = document.querySelectorAll('.speed button');
+  for (var k = 0; k < btns.length; k++) {
+    btns[k].onclick = function () {
+      rate = parseFloat(this.getAttribute('data-rate'));
+      var all = document.querySelectorAll('.speed button');
+      for (var j = 0; j < all.length; j++) all[j].setAttribute('aria-pressed', String(parseFloat(all[j].getAttribute('data-rate')) === rate));
+      speak(rate === 0.5 ? 'Slow.' : 'Very slow.');
+    };
+  }
+}
+
+function showMenu() {
+  S.mode = null;
+  stopAudio();
+  var tiles = ['letter', 'sound', 'word', 'count'].map(function (m) {
+    return '<button class="tile" type="button" data-mode="' + m + '"><span class="big disp">' + MODES[m].big + '</span><span class="name">' + MODES[m].name + '</span><span class="hint">' + MODES[m].hint + '</span></button>';
+  }).join('');
+  app.innerHTML =
+    '<div class="top"><div class="title"><h1>ABCD Letter Play</h1><p>Tap a game. Tap the speaker to hear it.</p></div>' + speedBar() + '</div>' +
+    '<div class="menu">' +
+    '<button class="tile wide" type="button" data-mode="learn"><span class="big disp"><span class="LA">A</span><span class="LB">B</span><span class="LC">C</span><span class="LD">D</span></span><span class="txt"><span class="name">Learn the words</span><span class="hint">Tap letters, pictures and numbers</span></span></button>' +
+    tiles +
+    '<button class="tile wide" type="button" data-mode="listen"><span class="big disp">🔊</span><span class="txt"><span class="name">Listen and repeat</span><span class="hint">Hear each sound and sentence again and again</span></span></button>' +
+    '</div>' +
+    '<p class="note">Games use the Aa Bb Cc Dd chart: apple, Annie, boy, bat, cat, car, dog, duck. Numbers 1 and 2 go with A and B. Numbers 3 and 4 go with C and D.</p>';
+  bindSpeed();
+  var t = document.querySelectorAll('.tile');
+  for (var k = 0; k < t.length; k++) t[k].onclick = function () {
+    var m = this.getAttribute('data-mode');
+    if (m === 'learn') showLearn(); else if (m === 'listen') showListen(); else startGame(m);
+  };
+}
+
+function wordTile(v) {
+  return '<button class="wtile" type="button" data-say="' + (v.w === 'Annie' ? 'Annie. Annie.' : v.w + '. ' + v.w + '.') + '"><span class="em">' + v.em + '</span><span class="wd">' + v.w + '</span></button>';
+}
+function pairBlock(L) {
+  var words = VOCAB.filter(function (v) { return v.L === L; });
+  var info = LET[L];
+  return '<div class="pairrow"><button class="lhead ' + lc(L) + '" type="button" data-say="' + L + '. ' + L + ' says ' + TS(L) + ', like ' + info.word + '.">' + L + L.toLowerCase() + '</button>' +
+    '<div class="words">' + words.map(wordTile).join('') + '</div></div>';
+}
+function showLearn() {
+  var cards = ['AB', 'CD'].map(function (g) {
+    var gl = GROUPS[g].letters;
+    return '<div class="chart"><div class="left">' + pairBlock(gl[0]) + pairBlock(gl[1]) + '</div>' +
+      '<div class="right">' + GROUPS[g].nums.map(function (n) { return '<button class="numbtn" type="button" data-say="' + NUMWORD[n] + '. ' + NUMWORD[n] + '.">' + n + '</button>'; }).join('') + '</div></div>';
+  }).join('');
+  app.innerHTML =
+    '<div class="top"><button class="back" type="button" id="bk">← Games</button>' + speedBar() + '</div>' +
+    '<div class="title"><h1>Learn the words</h1><p class="hear-note">Tap a letter, a picture or a number to hear it.</p></div>' + cards;
+  $('#bk').onclick = showMenu;
+  bindSpeed();
+  var els = document.querySelectorAll('[data-say]');
+  for (var k = 0; k < els.length; k++) els[k].onclick = function () { speak(this.getAttribute('data-say')); };
+}
+
+/* ---------- listen and repeat ---------- */
+var LISTEN = { L: 'A', rep: 3 }; /* rep: 1, 3, or 0 = keep going */
+
+function stopAudio() {
+  playTok++;
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  var pl = document.querySelectorAll('.lrow.playing');
+  for (var z = 0; z < pl.length; z++) pl[z].classList.remove('playing');
+  var pa = $('#playall'); if (pa) pa.textContent = 'Play everything';
+}
+
+/* Speaks each line one after another with a pause so the child can repeat. */
+function playParts(parts, rowEl, once) {
+  if (!('speechSynthesis' in window)) return;
+  stopAudio();
+  var my = playTok;
+  if (rowEl) rowEl.classList.add('playing');
+  var times = once ? 1 : (LISTEN.rep === 0 ? 1 : LISTEN.rep);
+  var seq = [];
+  for (var t = 0; t < times; t++) for (var p = 0; p < parts.length; p++) seq.push(parts[p]);
+  var i = 0;
+  function done() { if (rowEl) rowEl.classList.remove('playing'); var pa = $('#playall'); if (pa) pa.textContent = 'Play everything'; }
+  function next() {
+    if (my !== playTok) return;
+    if (i >= seq.length) {
+      if (LISTEN.rep === 0) { i = 0; setTimeout(next, 1500); return; }
+      done(); return;
+    }
+    var u = new SpeechSynthesisUtterance(seq[i]);
+    u.lang = 'en-US'; u.rate = rate; u.pitch = 1.08;
+    var v = pickVoice(); if (v) u.voice = v;
+    u.onend = function () { setTimeout(next, 1000); };
+    u.onerror = function () { setTimeout(next, 1000); };
+    i++;
+    try { window.speechSynthesis.speak(u); } catch (e) { done(); }
+  }
+  next();
+}
+
+function listenRows(L) {
+  var info = LET[L], g = (L === 'A' || L === 'B') ? 'AB' : 'CD', nums = GROUPS[g].nums, rows = [];
+  rows.push({
+    tag: 'Hear the sound', pics: info.em,
+    a: '<span class="a" style="font-size:2.6rem;line-height:1.1">' + info.sound + '</span>',
+    parts: [TS(L) + '.']
+  });
+  rows.push({
+    tag: 'Sentence pattern', pics: '🗣️',
+    q: 'What sound does ' + L + ' make?',
+    a: '<span class="a">' + L + ' says <span class="hl">' + info.sound + '</span>.</span>',
+    parts: ['What sound does ' + L + ' make?', L + ' says ' + TS(L) + '.']
+  });
+  rows.push({
+    tag: 'Sentence pattern', pics: '<span class="' + lc(L) + '">' + L + L.toLowerCase() + '</span>',
+    q: 'What letter is this?',
+    a: '<span class="a">This is big <span class="hl">' + L + '</span>.</span><span class="a">This is small <span class="hl">' + L.toLowerCase() + '</span>.</span>',
+    parts: ['What letter is this?', 'This is big ' + L + '.', 'This is small ' + L + '.']
+  });
+  VOCAB.filter(function (v) { return v.L === L; }).forEach(function (v) {
+    var ans = v.w === 'Annie' ? 'This is Annie.' : 'It is ' + v.art + '.';
+    var shown = v.w === 'Annie' ? 'This is <span class="hl">Annie</span>.' : 'It is <span class="hl">' + v.art + '</span>.';
+    rows.push({ tag: 'Sentence pattern', pics: v.em, q: 'What is this?', a: '<span class="a">' + shown + '</span>', parts: ['What is this?', ans] });
+  });
+  COUNTABLE.filter(function (v) { return v.L === L; }).forEach(function (v) {
+    var q = 'How many ' + v.w + 's do you see?';
+    var html = '', parts = [q];
+    nums.forEach(function (n) {
+      var noun = n === 1 ? v.w : v.w + 's';
+      html += '<span class="a">I see <span class="hl">' + n + ' ' + noun + '</span>.</span>';
+      parts.push('I see ' + NUMWORD[n] + ' ' + noun + '.');
+    });
+    rows.push({ tag: 'Counting pattern', pics: v.em, q: q, a: html, parts: parts });
+  });
+  return rows;
+}
+
+function showListen() {
+  stopAudio();
+  var L = LISTEN.L, rows = listenRows(L);
+  var tabs = ['A', 'B', 'C', 'D'].map(function (x) {
+    return '<button class="tab ' + lc(x) + '" type="button" data-l="' + x + '" aria-pressed="' + (x === L) + '" aria-label="Letter ' + x + '">' + x + x.toLowerCase() + '</button>';
+  }).join('');
+  var reps = [[1, '1 time'], [3, '3 times'], [0, 'Keep going']].map(function (r) {
+    return '<button type="button" data-rep="' + r[0] + '" aria-pressed="' + (LISTEN.rep === r[0]) + '">' + r[1] + '</button>';
+  }).join('');
+  var body = rows.map(function (r, i) {
+    return '<div class="lrow" data-r="' + i + '"><div class="pics">' + r.pics + '</div><div class="txt"><span class="tag">' + r.tag + '</span>' +
+      (r.q ? '<span class="q">' + r.q + '</span>' : '') + r.a + '</div>' +
+      '<button class="listen" type="button" data-r="' + i + '" aria-label="Hear it">' + ICON + '</button></div>';
+  }).join('');
+  app.innerHTML =
+    '<div class="top"><button class="back" type="button" id="bk">← Games</button>' + speedBar() + '</div>' +
+    '<div class="title"><h1>Listen and repeat</h1><p class="hear-note">Pick a letter. Tap the speaker. Say it after the voice.</p></div>' +
+    '<div class="tabs" role="group" aria-label="Choose a letter">' + tabs + '</div>' +
+    '<div class="ctl"><span class="ctl-label">Say it</span><div class="speed" role="group" aria-label="How many times">' + reps + '</div></div>' +
+    '<div class="row" style="justify-content:flex-start"><button class="bigbtn" type="button" id="playall">Play everything</button><button class="bigbtn ghost" type="button" id="stopall">Stop</button></div>' +
+    '<div class="lrows">' + body + '</div>';
+  $('#bk').onclick = showMenu;
+  bindSpeed();
+  var tb = document.querySelectorAll('.tab');
+  for (var k = 0; k < tb.length; k++) tb[k].onclick = function () { LISTEN.L = this.getAttribute('data-l'); showListen(); };
+  var rb = document.querySelectorAll('[data-rep]');
+  for (var j = 0; j < rb.length; j++) rb[j].onclick = function () {
+    LISTEN.rep = parseInt(this.getAttribute('data-rep'), 10);
+    var all = document.querySelectorAll('[data-rep]');
+    for (var m = 0; m < all.length; m++) all[m].setAttribute('aria-pressed', String(parseInt(all[m].getAttribute('data-rep'), 10) === LISTEN.rep));
+    stopAudio();
+  };
+  var ls = document.querySelectorAll('.lrow .listen');
+  for (var n = 0; n < ls.length; n++) ls[n].onclick = function () {
+    var idx = parseInt(this.getAttribute('data-r'), 10);
+    playParts(rows[idx].parts, this.parentNode);
+  };
+  $('#stopall').onclick = stopAudio;
+  $('#playall').onclick = function () {
+    var all = []; rows.forEach(function (r) { all = all.concat(r.parts); });
+    playParts(all, null, true);
+    this.textContent = 'Playing...';
+  };
+}
+
+function startGame(mode) {
+  S.mode = mode; S.i = 0; S.stars = 0;
+  var qs = [], seen = {};
+  for (var n = 0; n < 8; n++) {
+    var q, tries = 0;
+    do { q = BUILD[mode](n % 2 ? 'CD' : 'AB'); tries++; } while (seen[q.prompt + q.sentence] && tries < 12);
+    seen[q.prompt + q.sentence] = 1;
+    qs.push(q);
+  }
+  S.qs = qs;
+  showQ();
+}
+
+function showQ() {
+  var q = S.qs[S.i];
+  S.answered = false; S.tried = false;
+  q.shuffled = shuffle(q.opts);
+  var dots = '';
+  for (var d = 0; d < S.qs.length; d++) dots += '<i class="' + (d < S.i ? 'done' : d === S.i ? 'now' : '') + '"></i>';
+  app.innerHTML =
+    '<div class="top"><button class="back" type="button" id="bk">← Games</button><div class="progress" aria-label="Question ' + (S.i + 1) + ' of ' + S.qs.length + '">' + dots + '</div>' + speedBar() + '</div>' +
+    '<div class="qcard">' +
+      '<div class="prompt"><h2>' + q.prompt + '</h2><button class="listen" type="button" id="ls" aria-label="Hear the question">' + ICON + '</button></div>' +
+      '<div class="stage">' + q.stage + '</div>' +
+      '<div class="opts" id="opts">' + q.shuffled.map(function (o, idx) { return '<button class="opt" type="button" data-i="' + idx + '">' + o.html + '</button>'; }).join('') + '</div>' +
+      '<div class="say" id="say" aria-live="polite"></div>' +
+      '<div id="nx"></div>' +
+    '</div>';
+  $('#bk').onclick = showMenu;
+  $('#ls').onclick = function () { speak(q.speak); };
+  bindSpeed();
+  var ob = document.querySelectorAll('.opt');
+  for (var k = 0; k < ob.length; k++) ob[k].onclick = function () { answer(this); };
+  speak(q.speak);
+}
+
+function answer(btn) {
+  if (S.answered) return;
+  var q = S.qs[S.i], o = q.shuffled[parseInt(btn.getAttribute('data-i'), 10)];
+  var say = $('#say');
+  if (o.ok) {
+    S.answered = true;
+    if (!S.tried) S.stars++;
+    btn.classList.add('good');
+    say.className = 'say ok'; say.textContent = q.sentence;
+    speak(PRAISE[rnd(PRAISE.length)] + ' ' + q.sayOk);
+    var last = S.i === S.qs.length - 1;
+    $('#nx').innerHTML = '<button class="nextbtn" type="button" id="nb">' + (last ? 'See my stars' : 'Next') + '</button>';
+    $('#nb').onclick = function () { if (last) showResult(); else { S.i++; showQ(); } };
+    $('#nb').focus();
+  } else {
+    S.tried = true;
+    btn.classList.add('bad'); btn.disabled = true;
+    say.className = 'say no'; say.textContent = 'Try again!';
+    speak(o.say ? o.say + '. Try again.' : 'Try again.');
+  }
+}
+
+function showResult() {
+  var total = S.qs.length, st = '';
+  for (var k = 0; k < total; k++) st += '<span class="' + (k < S.stars ? 'on' : '') + '">⭐</span>';
+  app.innerHTML =
+    '<div class="top"><button class="back" type="button" id="bk">← Games</button>' + speedBar() + '</div>' +
+    '<div class="qcard result"><h2 class="disp" style="font-size:2rem">Great job!</h2>' +
+    '<div class="stars" aria-hidden="true">' + st + '</div>' +
+    '<div class="say ok">You got ' + S.stars + ' of ' + total + ' stars.</div>' +
+    '<div class="row"><button class="bigbtn" type="button" id="again">Play again</button><button class="bigbtn ghost" type="button" id="menu">Other games</button></div></div>';
+  $('#bk').onclick = showMenu; $('#menu').onclick = showMenu;
+  $('#again').onclick = function () { startGame(S.mode); };
+  bindSpeed();
+  speak('Great job! You got ' + S.stars + ' stars.');
+}
+
+showMenu();
+</script>
+
+</body></html>
